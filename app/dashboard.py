@@ -11,7 +11,7 @@ st.set_page_config(page_title="ASEAN Food Prices Dashboard", layout="wide")
 con = duckdb.connect()
 
 # Read Parquet data excluding _SUCCESS or CRC files
-DATA_PATH = "/home/qin/projects/asean-food-etl/data/processed/asean_food.parquet/*/*.parquet"
+DATA_PATH = "../data/processed/asean_food.parquet/*/*.parquet"
 query = f"SELECT * FROM read_parquet('{DATA_PATH}')"
 df = con.execute(query).df()
 
