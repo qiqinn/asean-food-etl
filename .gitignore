@@ -1,0 +1,21 @@
+# Python & Env
+.venv/
+__pycache__/
+*.pyc
+
+# Data
+data/raw/
+data/processed/
+
+# Logs & Outputs
+logs/
+spark-warehouse/
+.DS_Store
+
+# Jupyter & Streamlit
+.ipynb_checkpoints/
+.streamlit/
+
+# Other
+.env
+
