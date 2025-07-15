@@ -6,30 +6,48 @@ from datetime import datetime
 from huggingface_hub import list_repo_files, hf_hub_url
 
 # Set page config
-st.set_page_config(page_title="ASEAN Food Prices Dashboard", layout="wide")
+st.set_page_config(page_title="ASEAN Food Dashboard", layout="wide")
+
+from huggingface_hub import list_repo_files, hf_hub_url
+import duckdb
 
 REPO_ID = "qindea/asean-food-etl-data"
 FOLDER = "asean_food.parquet"
 
-# List parquet files (dataset repo!)
+# 1️⃣ List all files
 all_files = list_repo_files(REPO_ID, repo_type="dataset")
-parquet_files = [f for f in all_files if f.startswith(FOLDER) and f.endswith('.parquet')]
 
-urls = [hf_hub_url(REPO_ID, path, repo_type="dataset") for path in parquet_files]
+# 2️⃣ Filter parquet files (all countries, not just IDN)
+parquet_files = [
+    f for f in all_files
+    if f.startswith(FOLDER) and f.endswith('.parquet')
+]
 
+# 3️⃣ Get signed URLs
+urls = [
+    hf_hub_url(REPO_ID, path, repo_type="dataset")
+    for path in parquet_files
+]
+
+# 4️⃣ Load with DuckDB using workaround
 con = duckdb.connect()
+
 query = f"""
 SELECT *, 
-       regexp_extract(filename, 'countryiso3=([A-Z]+)', 1) AS countryiso3
+       regexp_extract(filename, 'countryiso3%3D([A-Z]+)', 1) AS countryiso3
 FROM read_parquet({urls}, filename=True)
 """
+
 df = con.execute(query).df()
+
 
 # Ensure 'month' is datetime
 df['month'] = pd.to_datetime(df['month'])
 
 # Prepare dropdown options
 all_countries = sorted(df['countryiso3'].unique())
+
+
 
 all_commodities = sorted(df['commodity_group'].unique())
 
@@ -48,11 +66,11 @@ else:
     selected_countries = st.sidebar.multiselect("Select Countries", all_countries, default=all_countries)
 
 # Commodity selection
-commodity_mode = st.sidebar.radio("Commodity Filter", ["All Commodities", "Essential Commodities", "Select Specific Commodities"])
+commodity_mode = st.sidebar.radio("Commodity Filter", ["All Commodities", "Select Specific Commodities"])
 if commodity_mode == "All Commodities":
     selected_commodities = all_commodities
-elif commodity_mode == "Essential Commodities":
-    selected_commodities = [c for c in all_commodities if any(e.lower() in c.lower() for e in essential_commodities)]
+# elif commodity_mode == "Essential Commodities":
+#     selected_commodities = [c for c in all_commodities if any(e.lower() in c.lower() for e in essential_commodities)]
 else:
     selected_commodities = st.sidebar.multiselect("Select Commodities", all_commodities, default=all_commodities)
 
@@ -81,7 +99,7 @@ df_filtered = df[
 ]
 
 # Main Title
-st.title("ASEAN Food Prices Dashboard (USD Standardized)")
+st.title("ASEAN Food Prices Dashboard (USD Standardized)") 
 
 # Overall trend
 st.subheader("Overall Average Price Trend per Country")
