@@ -4,6 +4,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col, to_date, year, month, lit, avg, when
 )
+from huggingface_hub import upload_folder
 
 # Setup logger
 logging.basicConfig(level=logging.INFO)
@@ -88,6 +89,19 @@ df_agg = df_asean.groupBy(
 # Save to Parquet partitioned by country
 logger.info(f"Saving processed data to: {OUTPUT_PATH}")
 
+
 df_agg.write.mode("overwrite").partitionBy("countryiso3").parquet(OUTPUT_PATH)
 
+# Set your repo
+repo_id = "qindea/asean-food-etl-data"
+logging.info(f"Uploading processed data from '{OUTPUT_PATH}' to Hugging Face Hub ({repo_id})...")
+# Upload the folder
+upload_folder(
+    repo_id=repo_id,
+    repo_type="dataset",
+    folder_path="./data/processed/asean_food.parquet",
+    path_in_repo="asean_food.parquet",
+    commit_message="Upload full ASEAN food parquet partitioned data"
+)
+logging.info("Hugging Face upload completed successfully.")
 logger.info("ETL process completed successfully")
